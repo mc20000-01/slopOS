@@ -225,6 +225,69 @@ textarea {
   padding: 0.3rem;
 }
 
+.studio {
+  display: grid;
+  gap: 1.2rem;
+}
+
+.studio-editor {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.studio-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.studio-actions button {
+  background: linear-gradient(120deg, rgba(82, 208, 255, 0.4), rgba(168, 85, 247, 0.4));
+  color: var(--text);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 10px;
+  padding: 0.4rem 1.2rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.studio-output {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.studio-output-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.studio-output-header h4 {
+  margin: 0;
+}
+
+.studio-output-panel {
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 12px;
+  padding: 0.8rem;
+  min-height: 140px;
+  max-height: 220px;
+  overflow-y: auto;
+  font-family: "Fira Code", monospace;
+  font-size: 0.85rem;
+  white-space: pre-wrap;
+}
+
+.studio-output-panel p {
+  margin: 0 0 0.5rem;
+}
+
+.studio-output-panel p:last-child {
+  margin-bottom: 0;
+}
+
 .gallery {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
