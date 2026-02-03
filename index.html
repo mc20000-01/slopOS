@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>slopOS Web</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="boot-screen" id="bootScreen" aria-live="polite">
+      <div class="boot-logo">slopOS</div>
+      <p>Initializing web OS services…</p>
+      <div class="boot-bar"><span></span></div>
+    </div>
+
+    <div class="desktop" id="desktop" hidden>
+      <header class="top-bar">
+        <div class="brand">slopOS</div>
+        <div class="status" id="status">Loading…</div>
+      </header>
+
+      <main class="workspace" role="presentation">
+        <section class="icon-grid">
+          <button class="app-icon" data-app="about">
+            <span>🪐</span>
+            <strong>About</strong>
+          </button>
+          <button class="app-icon" data-app="notes">
+            <span>📝</span>
+            <strong>Notes</strong>
+          </button>
+          <button class="app-icon" data-app="terminal">
+            <span>💻</span>
+            <strong>Terminal</strong>
+          </button>
+          <button class="app-icon" data-app="gallery">
+            <span>🖼️</span>
+            <strong>Gallery</strong>
+          </button>
+        </section>
+
+        <section class="window" id="window" role="dialog" aria-modal="false">
+          <header class="window-header">
+            <h2 id="windowTitle">Welcome</h2>
+            <div class="window-actions">
+              <button id="minimize">_</button>
+              <button id="close">✕</button>
+            </div>
+          </header>
+          <div class="window-body" id="windowBody"></div>
+        </section>
+      </main>
+
+      <footer class="dock" role="navigation">
+        <button class="dock-button" data-app="launcher">Launchpad</button>
+        <div class="dock-divider"></div>
+        <button class="dock-button" data-app="about">About</button>
+        <button class="dock-button" data-app="notes">Notes</button>
+        <button class="dock-button" data-app="terminal">Terminal</button>
+        <button class="dock-button" data-app="gallery">Gallery</button>
+      </footer>
+    </div>
+
+    <template id="templates">
+      <article data-template="about">
+        <h3>Welcome to slopOS Web</h3>
+        <p>
+          slopOS is now a browser-first operating system shell with draggable
+          windows, persistent notes, and a lightweight "terminal".
+        </p>
+        <ul>
+          <li>Launch apps from the dock or desktop.</li>
+          <li>Save notes locally with instant autosave.</li>
+          <li>Review system status from the top bar.</li>
+        </ul>
+      </article>
+      <article data-template="notes">
+        <label for="notesArea">Sticky Notes</label>
+        <textarea id="notesArea" placeholder="Write something…"></textarea>
+        <p class="hint">Notes are stored locally in your browser.</p>
+      </article>
+      <article data-template="terminal">
+        <div class="terminal">
+          <p><strong>slopOS shell</strong> — type a command:</p>
+          <div class="terminal-output" id="terminalOutput"></div>
+          <form id="terminalForm">
+            <label>
+              <span>$</span>
+              <input id="terminalInput" autocomplete="off" />
+            </label>
+          </form>
+        </div>
+      </article>
+      <article data-template="gallery">
+        <div class="gallery">
+          <figure>
+            <div class="swatch swatch-a"></div>
+            <figcaption>Neon Harbor</figcaption>
+          </figure>
+          <figure>
+            <div class="swatch swatch-b"></div>
+            <figcaption>Night Sky</figcaption>
+          </figure>
+          <figure>
+            <div class="swatch swatch-c"></div>
+            <figcaption>Pulse Drive</figcaption>
+          </figure>
+        </div>
+      </article>
+    </template>
+
+    <script src="app.js"></script>
+  </body>
+</html>
