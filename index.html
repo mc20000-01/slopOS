@@ -33,6 +33,10 @@
             <span>💻</span>
             <strong>Terminal</strong>
           </button>
+          <button class="app-icon" data-app="files">
+            <span>🗂️</span>
+            <strong>Files</strong>
+          </button>
           <button class="app-icon" data-app="gallery">
             <span>🖼️</span>
             <strong>Gallery</strong>
@@ -57,6 +61,7 @@
         <button class="dock-button" data-app="about">About</button>
         <button class="dock-button" data-app="notes">Notes</button>
         <button class="dock-button" data-app="terminal">Terminal</button>
+        <button class="dock-button" data-app="files">Files</button>
         <button class="dock-button" data-app="gallery">Gallery</button>
       </footer>
     </div>
@@ -91,6 +96,25 @@
           </form>
         </div>
       </article>
+      <article data-template="files">
+        <div class="files">
+          <aside class="files-list">
+            <h4>Virtual Files</h4>
+            <div id="fileList" class="file-list"></div>
+          </aside>
+          <section class="files-viewer">
+            <header class="files-header">
+              <h4 id="fileName">Select a file</h4>
+              <button id="runBoxed" type="button" hidden>Run</button>
+            </header>
+            <textarea id="fileViewer" readonly></textarea>
+            <div class="files-output">
+              <h5>Output</h5>
+              <pre id="filesOutput">(no output)</pre>
+            </div>
+          </section>
+        </div>
+      </article>
       <article data-template="gallery">
         <div class="gallery">
           <figure>
@@ -109,6 +133,6 @@
       </article>
     </template>
 
-    <script src="app.js"></script>
+    <script type="module" src="app.js"></script>
   </body>
 </html>

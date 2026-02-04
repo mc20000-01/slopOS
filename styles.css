@@ -225,6 +225,79 @@ textarea {
   padding: 0.3rem;
 }
 
+.files {
+  display: grid;
+  grid-template-columns: minmax(160px, 220px) 1fr;
+  gap: 1rem;
+}
+
+.files-list {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+  padding: 0.8rem;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.file-list {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.file-entry {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: var(--text);
+  padding: 0.4rem 0.6rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.files-viewer {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.files-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.files-header button {
+  background: var(--accent);
+  color: #041026;
+  border: none;
+  padding: 0.35rem 0.8rem;
+  border-radius: 999px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.files-viewer textarea {
+  min-height: 140px;
+  font-family: "Fira Code", monospace;
+  font-size: 0.85rem;
+}
+
+.files-output {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 12px;
+  padding: 0.8rem;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.files-output pre {
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: "Fira Code", monospace;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
 .gallery {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
@@ -281,6 +354,10 @@ textarea {
 
 @media (max-width: 960px) {
   .workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .files {
     grid-template-columns: 1fr;
   }
 

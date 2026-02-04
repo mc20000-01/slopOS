@@ -1,3 +1,5 @@
+import { runBoxedCode } from "./boxedlang.js";
+
 const bootScreen = document.getElementById("bootScreen");
 const desktop = document.getElementById("desktop");
 const status = document.getElementById("status");
@@ -8,9 +10,16 @@ const minimize = document.getElementById("minimize");
 const closeButton = document.getElementById("close");
 const templates = document.getElementById("templates");
 
+const virtualFiles = {
+  "hello.box": "say Hello~world\nbox name|slopOS\nsay Welcome~to~$name",
+  "readme.txt": "slopOS virtual filesystem. Try running hello.box.",
+};
+
 const appState = {
   activeApp: "about",
   notesKey: "slopOS-notes",
+  terminalHistory: [],
+  terminalOutput: null,
 };
 
 const appContent = {
@@ -26,16 +35,64 @@ const appContent = {
   gallery: {
     title: "Gallery",
   },
+  files: {
+    title: "Files",
+  },
 };
 
 const terminalResponses = {
-  help: "Available commands: help, status, clear, time",
+  help: "Available commands: help, status, clear, time, ls, cat <file>, boxed <file>",
   status: "All systems nominal. Network uplink stable.",
 };
 
 const setStatus = () => {
   const now = new Date();
   status.textContent = `${now.toLocaleDateString()} · ${now.toLocaleTimeString()}`;
+};
+
+const renderTerminalLine = (line) => {
+  if (!appState.terminalOutput) {
+    return;
+  }
+  const p = document.createElement("p");
+  p.textContent = line;
+  appState.terminalOutput.appendChild(p);
+  appState.terminalOutput.scrollTop = appState.terminalOutput.scrollHeight;
+};
+
+const appendTerminalLine = (line) => {
+  appState.terminalHistory.push(line);
+  renderTerminalLine(line);
+};
+
+const resetTerminalOutput = () => {
+  if (!appState.terminalOutput) {
+    return;
+  }
+  appState.terminalOutput.innerHTML = "";
+};
+
+const runBoxedScript = (source, destination) => {
+  const lines = runBoxedCode(source);
+  if (destination === "terminal") {
+    lines.forEach((line) => appendTerminalLine(line));
+    return;
+  }
+  return lines;
+};
+
+const renderFileList = (container, onSelect) => {
+  container.innerHTML = "";
+  Object.keys(virtualFiles)
+    .sort()
+    .forEach((filename) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "file-entry";
+      button.textContent = filename;
+      button.addEventListener("click", () => onSelect(filename));
+      container.appendChild(button);
+    });
 };
 
 const renderApp = (appName) => {
@@ -65,14 +122,13 @@ const renderApp = (appName) => {
     const form = windowBody.querySelector("#terminalForm");
     const input = windowBody.querySelector("#terminalInput");
 
-    const appendLine = (line) => {
-      const p = document.createElement("p");
-      p.textContent = line;
-      output.appendChild(p);
-      output.scrollTop = output.scrollHeight;
-    };
+    appState.terminalOutput = output;
+    resetTerminalOutput();
+    appState.terminalHistory.forEach((line) => renderTerminalLine(line));
 
-    appendLine("Type 'help' for a command list.");
+    if (appState.terminalHistory.length === 0) {
+      appendTerminalLine("Type 'help' for a command list.");
+    }
 
     form.addEventListener("submit", (event) => {
       event.preventDefault();
@@ -80,16 +136,77 @@ const renderApp = (appName) => {
       if (!command) {
         return;
       }
-      appendLine(`$ ${command}`);
-      if (command === "clear") {
-        output.innerHTML = "";
-      } else if (command === "time") {
-        appendLine(new Date().toLocaleString());
+      appendTerminalLine(`$ ${command}`);
+
+      const [baseCommand, ...args] = command.split(" ");
+
+      if (baseCommand === "clear") {
+        appState.terminalHistory = [];
+        resetTerminalOutput();
+      } else if (baseCommand === "time") {
+        appendTerminalLine(new Date().toLocaleString());
+      } else if (baseCommand === "ls") {
+        Object.keys(virtualFiles)
+          .sort()
+          .forEach((file) => appendTerminalLine(file));
+      } else if (baseCommand === "cat") {
+        const filename = args.join(" ");
+        if (!filename) {
+          appendTerminalLine("Usage: cat <filename>");
+        } else if (!virtualFiles[filename]) {
+          appendTerminalLine(`File not found: ${filename}`);
+        } else {
+          appendTerminalLine(virtualFiles[filename]);
+        }
+      } else if (baseCommand === "boxed") {
+        const filename = args.join(" ");
+        if (!filename) {
+          appendTerminalLine("Usage: boxed <filename>");
+        } else if (!virtualFiles[filename]) {
+          appendTerminalLine(`File not found: ${filename}`);
+        } else {
+          runBoxedScript(virtualFiles[filename], "terminal");
+        }
       } else {
-        appendLine(terminalResponses[command] ?? `Unknown command: ${command}`);
+        appendTerminalLine(
+          terminalResponses[baseCommand] ?? `Unknown command: ${command}`
+        );
       }
       input.value = "";
     });
+  }
+
+  if (appName === "files") {
+    const list = windowBody.querySelector("#fileList");
+    const viewer = windowBody.querySelector("#fileViewer");
+    const filenameLabel = windowBody.querySelector("#fileName");
+    const runButton = windowBody.querySelector("#runBoxed");
+    const output = windowBody.querySelector("#filesOutput");
+
+    const showFile = (filename) => {
+      const contents = virtualFiles[filename];
+      filenameLabel.textContent = filename;
+      viewer.value = contents;
+      const isBox = filename.endsWith(".box");
+      runButton.hidden = !isBox;
+      output.textContent = "";
+
+      if (isBox) {
+        runButton.onclick = () => {
+          const lines = runBoxedScript(contents);
+          output.textContent = lines.join("\n");
+          if (lines.length === 0) {
+            output.textContent = "(no output)";
+          }
+        };
+      }
+    };
+
+    renderFileList(list, showFile);
+    const firstFile = Object.keys(virtualFiles).sort()[0];
+    if (firstFile) {
+      showFile(firstFile);
+    }
   }
 };
 
