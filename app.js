@@ -330,10 +330,8 @@ closeButton.addEventListener("click", () => {
 
 setInterval(setStatus, 1000);
 
-setTimeout(() => {
-  bootScreen.hidden = true;
-  desktop.hidden = false;
-  setStatus();
-  renderApp("about");
-  attachAppLaunchers();
-}, 1200);
+bootScreen.hidden = true;
+desktop.hidden = false;
+setStatus();
+renderApp("about");
+attachAppLaunchers();
