@@ -1,40 +1,39 @@
 const bootScreen = document.getElementById("bootScreen");
 const desktop = document.getElementById("desktop");
 const status = document.getElementById("status");
-const windowPane = document.getElementById("window");
-const windowTitle = document.getElementById("windowTitle");
-const windowBody = document.getElementById("windowBody");
-const minimize = document.getElementById("minimize");
-const closeButton = document.getElementById("close");
+const windowsContainer = document.getElementById("windows");
+const desktopArea = document.getElementById("desktopArea");
+const launcher = document.getElementById("launcher");
+const launcherGrid = document.getElementById("launcherGrid");
+const launcherSearch = document.getElementById("launcherSearch");
+const launcherClose = document.getElementById("launcherClose");
+const activitiesButton = document.getElementById("activitiesButton");
 const templates = document.getElementById("templates");
 
 const appState = {
-  activeApp: "about",
   notesKey: "slopOS-notes",
   boxedKey: "slopOS-boxed",
+  openWindows: new Map(),
+  zIndex: 10,
+  cascadeOffset: 0,
 };
 
-const appContent = {
-  about: {
-    title: "About slopOS",
-  },
-  notes: {
-    title: "Notes",
-  },
-  terminal: {
-    title: "Terminal",
-  },
-  gallery: {
-    title: "Gallery",
-  },
-  boxed: {
-    title: "BoxedLang Studio",
-  },
+const apps = {
+  about: { title: "About slopOS", icon: "🪐" },
+  notes: { title: "Notes", icon: "📝" },
+  terminal: { title: "Terminal", icon: "💻" },
+  files: { title: "Files", icon: "📁" },
+  browser: { title: "Browser", icon: "🌐" },
+  gallery: { title: "Gallery", icon: "🖼️" },
+  boxed: { title: "BoxedLang Studio", icon: "📦" },
+  settings: { title: "Settings", icon: "⚙️" },
 };
 
 const terminalResponses = {
-  help: "Available commands: help, status, clear, time",
+  help: "Available commands: help, status, clear, time, neofetch",
   status: "All systems nominal. Network uplink stable.",
+  neofetch:
+    "slopOS 24.04 LTS (web)\nKernel: 6.8.0-virtual\nShell: slopOS sh\nUptime: 3 mins",
 };
 
 const boxedSample = `# BoxedLang Studio sample
@@ -210,100 +209,297 @@ const setStatus = () => {
   status.textContent = `${now.toLocaleDateString()} · ${now.toLocaleTimeString()}`;
 };
 
-const renderApp = (appName) => {
-  appState.activeApp = appName;
-  const template = templates.content.querySelector(
-    `[data-template="${appName}"]`
-  );
+const focusWindow = (windowEl) => {
+  appState.zIndex += 1;
+  windowEl.style.zIndex = appState.zIndex;
+  document.querySelectorAll(".window").forEach((windowItem) => {
+    windowItem.classList.toggle("is-focused", windowItem === windowEl);
+  });
+};
 
-  if (!template) {
+const updateDockIndicators = () => {
+  document.querySelectorAll(".dock-button[data-app]").forEach((button) => {
+    const appName = button.dataset.app;
+    if (!appName || appName === "launcher") {
+      return;
+    }
+    button.classList.toggle("running", appState.openWindows.has(appName));
+  });
+};
+
+const attachDrag = (windowEl, header) => {
+  header.addEventListener("pointerdown", (event) => {
+    if (windowEl.classList.contains("maximized")) {
+      return;
+    }
+    focusWindow(windowEl);
+    header.setPointerCapture(event.pointerId);
+
+    const startX = event.clientX;
+    const startY = event.clientY;
+    const startLeft = windowEl.offsetLeft;
+    const startTop = windowEl.offsetTop;
+    const bounds = desktopArea.getBoundingClientRect();
+
+    const handleMove = (moveEvent) => {
+      const dx = moveEvent.clientX - startX;
+      const dy = moveEvent.clientY - startY;
+      const nextLeft = Math.min(
+        Math.max(0, startLeft + dx),
+        bounds.width - windowEl.offsetWidth
+      );
+      const nextTop = Math.min(
+        Math.max(0, startTop + dy),
+        bounds.height - windowEl.offsetHeight
+      );
+      windowEl.style.left = `${nextLeft}px`;
+      windowEl.style.top = `${nextTop}px`;
+    };
+
+    const handleUp = () => {
+      header.releasePointerCapture(event.pointerId);
+      header.removeEventListener("pointermove", handleMove);
+      header.removeEventListener("pointerup", handleUp);
+    };
+
+    header.addEventListener("pointermove", handleMove);
+    header.addEventListener("pointerup", handleUp);
+  });
+};
+
+const wireNotes = (windowEl) => {
+  const notesArea = windowEl.querySelector("#notesArea");
+  if (!notesArea) {
+    return;
+  }
+  notesArea.value = localStorage.getItem(appState.notesKey) ?? "";
+  notesArea.addEventListener("input", (event) => {
+    localStorage.setItem(appState.notesKey, event.target.value);
+  });
+};
+
+const wireTerminal = (windowEl) => {
+  const output = windowEl.querySelector("#terminalOutput");
+  const form = windowEl.querySelector("#terminalForm");
+  const input = windowEl.querySelector("#terminalInput");
+
+  if (!output || !form || !input) {
     return;
   }
 
-  windowTitle.textContent = appContent[appName]?.title ?? "App";
-  windowBody.innerHTML = "";
-  windowBody.appendChild(template.cloneNode(true));
+  const appendLine = (line) => {
+    const p = document.createElement("p");
+    p.textContent = line;
+    output.appendChild(p);
+    output.scrollTop = output.scrollHeight;
+  };
 
-  if (appName === "notes") {
-    const notesArea = windowBody.querySelector("#notesArea");
-    notesArea.value = localStorage.getItem(appState.notesKey) ?? "";
-    notesArea.addEventListener("input", (event) => {
-      localStorage.setItem(appState.notesKey, event.target.value);
-    });
+  appendLine("Type 'help' for a command list.");
+
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const command = input.value.trim();
+    if (!command) {
+      return;
+    }
+    appendLine(`$ ${command}`);
+    if (command === "clear") {
+      output.innerHTML = "";
+    } else if (command === "time") {
+      appendLine(new Date().toLocaleString());
+    } else {
+      appendLine(terminalResponses[command] ?? `Unknown command: ${command}`);
+    }
+    input.value = "";
+  });
+};
+
+const wireBoxed = (windowEl) => {
+  const editor = windowEl.querySelector("#boxedEditor");
+  const outputPanel = windowEl.querySelector("#boxedOutput");
+  const runButton = windowEl.querySelector("#boxedRun");
+
+  if (!editor || !outputPanel || !runButton) {
+    return;
   }
 
-  if (appName === "terminal") {
-    const output = windowBody.querySelector("#terminalOutput");
-    const form = windowBody.querySelector("#terminalForm");
-    const input = windowBody.querySelector("#terminalInput");
+  const storedProgram = localStorage.getItem(appState.boxedKey);
+  editor.value = storedProgram ?? boxedSample;
 
-    const appendLine = (line) => {
+  const writeOutput = (lines) => {
+    outputPanel.innerHTML = "";
+    lines.forEach((line) => {
       const p = document.createElement("p");
       p.textContent = line;
-      output.appendChild(p);
-      output.scrollTop = output.scrollHeight;
-    };
-
-    appendLine("Type 'help' for a command list.");
-
-    form.addEventListener("submit", (event) => {
-      event.preventDefault();
-      const command = input.value.trim();
-      if (!command) {
-        return;
-      }
-      appendLine(`$ ${command}`);
-      if (command === "clear") {
-        output.innerHTML = "";
-      } else if (command === "time") {
-        appendLine(new Date().toLocaleString());
-      } else {
-        appendLine(terminalResponses[command] ?? `Unknown command: ${command}`);
-      }
-      input.value = "";
+      outputPanel.appendChild(p);
     });
-  }
+  };
 
+  const runProgram = () => {
+    try {
+      const output = runBoxedProgram(editor.value);
+      writeOutput(output.length ? output : ["(no output)"]);
+    } catch (error) {
+      const lineNumber = error.lineNumber ?? 0;
+      const sourceLine = error.sourceLine ?? "";
+      writeOutput([
+        `Error: ${error.message}`,
+        `Line ${lineNumber}: ${sourceLine.trim()}`,
+        `${" ".repeat(`Line ${lineNumber}: `.length)}^`,
+      ]);
+    }
+  };
+
+  editor.addEventListener("input", (event) => {
+    localStorage.setItem(appState.boxedKey, event.target.value);
+  });
+
+  runButton.addEventListener("click", runProgram);
+
+  runProgram();
+};
+
+const wireAppBehavior = (windowEl, appName) => {
+  if (appName === "notes") {
+    wireNotes(windowEl);
+  }
+  if (appName === "terminal") {
+    wireTerminal(windowEl);
+  }
   if (appName === "boxed") {
-    const editor = windowBody.querySelector("#boxedEditor");
-    const outputPanel = windowBody.querySelector("#boxedOutput");
-    const runButton = windowBody.querySelector("#boxedRun");
-
-    const storedProgram = localStorage.getItem(appState.boxedKey);
-    editor.value = storedProgram ?? boxedSample;
-
-    const writeOutput = (lines) => {
-      outputPanel.innerHTML = "";
-      lines.forEach((line) => {
-        const p = document.createElement("p");
-        p.textContent = line;
-        outputPanel.appendChild(p);
-      });
-    };
-
-    const runProgram = () => {
-      try {
-        const output = runBoxedProgram(editor.value);
-        writeOutput(output.length ? output : ["(no output)"]);
-      } catch (error) {
-        const lineNumber = error.lineNumber ?? 0;
-        const sourceLine = error.sourceLine ?? "";
-        writeOutput([
-          `Error: ${error.message}`,
-          `Line ${lineNumber}: ${sourceLine.trim()}`,
-          `${" ".repeat(`Line ${lineNumber}: `.length)}^`,
-        ]);
-      }
-    };
-
-    editor.addEventListener("input", (event) => {
-      localStorage.setItem(appState.boxedKey, event.target.value);
-    });
-
-    runButton.addEventListener("click", runProgram);
-
-    runProgram();
+    wireBoxed(windowEl);
   }
+};
+
+const createWindow = (appName) => {
+  const app = apps[appName];
+  if (!app) {
+    return null;
+  }
+
+  const windowEl = document.createElement("section");
+  windowEl.className = "window";
+  windowEl.dataset.app = appName;
+
+  const header = document.createElement("header");
+  header.className = "window-header";
+  const title = document.createElement("h2");
+  title.textContent = app.title;
+  const actions = document.createElement("div");
+  actions.className = "window-actions";
+
+  const minimizeButton = document.createElement("button");
+  minimizeButton.type = "button";
+  minimizeButton.textContent = "–";
+
+  const maximizeButton = document.createElement("button");
+  maximizeButton.type = "button";
+  maximizeButton.textContent = "▢";
+
+  const closeButton = document.createElement("button");
+  closeButton.type = "button";
+  closeButton.textContent = "✕";
+
+  actions.append(minimizeButton, maximizeButton, closeButton);
+  header.append(title, actions);
+
+  const body = document.createElement("div");
+  body.className = "window-body";
+  const template = templates.content.querySelector(
+    `[data-template="${appName}"]`
+  );
+  if (template) {
+    body.appendChild(template.cloneNode(true));
+  }
+
+  windowEl.append(header, body);
+  windowsContainer.appendChild(windowEl);
+
+  const offset = appState.cascadeOffset % 120;
+  windowEl.style.left = `${120 + offset}px`;
+  windowEl.style.top = `${80 + offset}px`;
+  appState.cascadeOffset += 28;
+
+  focusWindow(windowEl);
+  attachDrag(windowEl, header);
+  wireAppBehavior(windowEl, appName);
+
+  windowEl.addEventListener("pointerdown", () => focusWindow(windowEl));
+
+  minimizeButton.addEventListener("click", () => {
+    windowEl.classList.add("minimized");
+  });
+
+  maximizeButton.addEventListener("click", () => {
+    if (windowEl.classList.contains("maximized")) {
+      windowEl.classList.remove("maximized");
+      const { prevLeft, prevTop, prevWidth, prevHeight } = windowEl.dataset;
+      if (prevLeft) windowEl.style.left = `${prevLeft}px`;
+      if (prevTop) windowEl.style.top = `${prevTop}px`;
+      if (prevWidth) windowEl.style.width = `${prevWidth}px`;
+      if (prevHeight) windowEl.style.height = `${prevHeight}px`;
+    } else {
+      windowEl.dataset.prevLeft = windowEl.offsetLeft;
+      windowEl.dataset.prevTop = windowEl.offsetTop;
+      windowEl.dataset.prevWidth = windowEl.offsetWidth;
+      windowEl.dataset.prevHeight = windowEl.offsetHeight;
+      windowEl.classList.add("maximized");
+    }
+    focusWindow(windowEl);
+  });
+
+  closeButton.addEventListener("click", () => {
+    windowEl.remove();
+    appState.openWindows.delete(appName);
+    updateDockIndicators();
+  });
+
+  return windowEl;
+};
+
+const launchApp = (appName) => {
+  if (!apps[appName]) {
+    return;
+  }
+  const existing = appState.openWindows.get(appName);
+  if (existing) {
+    existing.classList.remove("minimized");
+    focusWindow(existing);
+    return;
+  }
+  const windowEl = createWindow(appName);
+  if (windowEl) {
+    appState.openWindows.set(appName, windowEl);
+    updateDockIndicators();
+  }
+};
+
+const setLauncherVisibility = (visible) => {
+  launcher.hidden = !visible;
+  if (visible) {
+    launcherSearch.value = "";
+    renderLauncher();
+    launcherSearch.focus();
+  }
+};
+
+const renderLauncher = () => {
+  const query = launcherSearch.value.toLowerCase();
+  launcherGrid.innerHTML = "";
+  Object.entries(apps).forEach(([appName, app]) => {
+    if (query && !app.title.toLowerCase().includes(query)) {
+      return;
+    }
+    const card = document.createElement("button");
+    card.className = "launcher-card";
+    card.type = "button";
+    card.innerHTML = `<span>${app.icon}</span><strong>${app.title}</strong>`;
+    card.addEventListener("click", () => {
+      launchApp(appName);
+      setLauncherVisibility(false);
+    });
+    launcherGrid.appendChild(card);
+  });
 };
 
 const attachAppLaunchers = () => {
@@ -311,21 +507,22 @@ const attachAppLaunchers = () => {
     button.addEventListener("click", () => {
       const app = button.dataset.app;
       if (app === "launcher") {
-        windowPane.classList.remove("minimized");
+        setLauncherVisibility(true);
         return;
       }
-      renderApp(app);
-      windowPane.classList.remove("minimized");
+      launchApp(app);
     });
   });
 };
 
-minimize.addEventListener("click", () => {
-  windowPane.classList.toggle("minimized");
-});
+launcherSearch.addEventListener("input", renderLauncher);
+launcherClose.addEventListener("click", () => setLauncherVisibility(false));
+activitiesButton.addEventListener("click", () => setLauncherVisibility(true));
 
-closeButton.addEventListener("click", () => {
-  windowPane.classList.add("minimized");
+window.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !launcher.hidden) {
+    setLauncherVisibility(false);
+  }
 });
 
 setInterval(setStatus, 1000);
@@ -333,5 +530,5 @@ setInterval(setStatus, 1000);
 bootScreen.hidden = true;
 desktop.hidden = false;
 setStatus();
-renderApp("about");
 attachAppLaunchers();
+launchApp("about");

@@ -16,68 +16,84 @@
 
     <div class="desktop" id="desktop" hidden>
       <header class="top-bar">
-        <div class="brand">slopOS</div>
+        <div class="top-left">
+          <button class="activities" id="activitiesButton">Activities</button>
+          <span class="brand">slopOS</span>
+        </div>
         <div class="status" id="status">Loading…</div>
+        <div class="top-right">
+          <span class="status-pill">🔊</span>
+          <span class="status-pill">📶</span>
+          <span class="status-pill">🔋</span>
+        </div>
       </header>
 
-      <main class="workspace" role="presentation">
-        <section class="icon-grid">
-          <button class="app-icon" data-app="about">
-            <span>🪐</span>
-            <strong>About</strong>
+      <div class="shell">
+        <nav class="dock" role="navigation" aria-label="Dock">
+          <button class="dock-button" data-app="launcher" aria-label="Show Apps">
+            ⬢
           </button>
-          <button class="app-icon" data-app="notes">
-            <span>📝</span>
-            <strong>Notes</strong>
-          </button>
-          <button class="app-icon" data-app="terminal">
-            <span>💻</span>
-            <strong>Terminal</strong>
-          </button>
-          <button class="app-icon" data-app="gallery">
-            <span>🖼️</span>
-            <strong>Gallery</strong>
-          </button>
-          <button class="app-icon" data-app="boxed">
-            <span>📦</span>
-            <strong>BoxedLang Studio</strong>
-          </button>
-        </section>
+          <button class="dock-button" data-app="about">🪐</button>
+          <button class="dock-button" data-app="notes">📝</button>
+          <button class="dock-button" data-app="terminal">💻</button>
+          <button class="dock-button" data-app="files">📁</button>
+          <button class="dock-button" data-app="gallery">🖼️</button>
+          <button class="dock-button" data-app="boxed">📦</button>
+          <button class="dock-button" data-app="settings">⚙️</button>
+        </nav>
 
-        <section class="window" id="window" role="dialog" aria-modal="false">
-          <header class="window-header">
-            <h2 id="windowTitle">Welcome</h2>
-            <div class="window-actions">
-              <button id="minimize">_</button>
-              <button id="close">✕</button>
+        <main class="workspace" role="presentation">
+          <section class="desktop-area" id="desktopArea">
+            <div class="desktop-icons">
+              <button class="app-icon" data-app="terminal">
+                <span>💻</span>
+                <strong>Terminal</strong>
+              </button>
+              <button class="app-icon" data-app="files">
+                <span>📁</span>
+                <strong>Files</strong>
+              </button>
+              <button class="app-icon" data-app="notes">
+                <span>📝</span>
+                <strong>Notes</strong>
+              </button>
+              <button class="app-icon" data-app="settings">
+                <span>⚙️</span>
+                <strong>Settings</strong>
+              </button>
             </div>
-          </header>
-          <div class="window-body" id="windowBody"></div>
-        </section>
-      </main>
+            <section class="windows" id="windows" aria-live="polite"></section>
+          </section>
+        </main>
+      </div>
 
-      <footer class="dock" role="navigation">
-        <button class="dock-button" data-app="launcher">Launchpad</button>
-        <div class="dock-divider"></div>
-        <button class="dock-button" data-app="about">About</button>
-        <button class="dock-button" data-app="notes">Notes</button>
-        <button class="dock-button" data-app="terminal">Terminal</button>
-        <button class="dock-button" data-app="gallery">Gallery</button>
-        <button class="dock-button" data-app="boxed">BoxedLang Studio</button>
-      </footer>
+      <section class="launcher" id="launcher" hidden>
+        <div class="launcher-panel">
+          <header class="launcher-header">
+            <input
+              type="search"
+              id="launcherSearch"
+              placeholder="Search apps"
+              aria-label="Search apps"
+            />
+            <button class="launcher-close" id="launcherClose">✕</button>
+          </header>
+          <div class="launcher-grid" id="launcherGrid"></div>
+        </div>
+      </section>
     </div>
 
     <template id="templates">
       <article data-template="about">
-        <h3>Welcome to slopOS Web</h3>
+        <h3>Welcome to slopOS</h3>
         <p>
-          slopOS is now a browser-first operating system shell with draggable
-          windows, persistent notes, and a lightweight "terminal".
+          slopOS now ships as a full Ubuntu-inspired web desktop with floating
+          windows, a left dock, and a GNOME-style Activities launcher.
         </p>
         <ul>
-          <li>Launch apps from the dock or desktop.</li>
-          <li>Save notes locally with instant autosave.</li>
-          <li>Review system status from the top bar.</li>
+          <li>Open multiple windows and arrange them freely.</li>
+          <li>Launch apps from the dock, desktop, or launcher.</li>
+          <li>Persist notes and studio projects locally.</li>
         </ul>
       </article>
       <article data-template="notes">
@@ -95,6 +111,60 @@
               <input id="terminalInput" autocomplete="off" />
             </label>
           </form>
+        </div>
+      </article>
+      <article data-template="files">
+        <div class="files">
+          <div class="files-sidebar">
+            <h4>Places</h4>
+            <ul>
+              <li>Home</li>
+              <li>Documents</li>
+              <li>Downloads</li>
+              <li>Pictures</li>
+              <li>Trash</li>
+            </ul>
+          </div>
+          <div class="files-content">
+            <h4>Home</h4>
+            <div class="files-grid">
+              <div class="file-card">📄 Resume.pdf</div>
+              <div class="file-card">📁 Projects</div>
+              <div class="file-card">📁 Music</div>
+              <div class="file-card">📁 Photos</div>
+              <div class="file-card">📄 Roadmap.md</div>
+              <div class="file-card">📄 Plan.txt</div>
+            </div>
+          </div>
+        </div>
+      </article>
+      <article data-template="browser">
+        <div class="browser">
+          <div class="browser-bar">
+            <span>https://intranet.slopos</span>
+            <button type="button">Go</button>
+          </div>
+          <div class="browser-page">
+            <h4>slopOS Intranet</h4>
+            <p>
+              Welcome to the local intranet. News, docs, and deployments live
+              here in the full system.
+            </p>
+            <div class="browser-cards">
+              <article>
+                <h5>System Updates</h5>
+                <p>Kernel 6.8 rolling update scheduled for 03:00.</p>
+              </article>
+              <article>
+                <h5>Team Wiki</h5>
+                <p>Find onboarding guides and shared runbooks.</p>
+              </article>
+              <article>
+                <h5>Service Status</h5>
+                <p>All regional clusters are reporting green.</p>
+              </article>
+            </div>
+          </div>
         </div>
       </article>
       <article data-template="gallery">
@@ -130,6 +200,36 @@
             </div>
             <div class="studio-output-panel" id="boxedOutput"></div>
           </div>
+        </div>
+      </article>
+      <article data-template="settings">
+        <div class="settings">
+          <section>
+            <h4>Appearance</h4>
+            <div class="settings-row">
+              <span>Accent color</span>
+              <div class="color-swatches">
+                <span class="dot dot-a"></span>
+                <span class="dot dot-b"></span>
+                <span class="dot dot-c"></span>
+              </div>
+            </div>
+            <div class="settings-row">
+              <span>Wallpaper</span>
+              <span class="hint">Nebula Gradient</span>
+            </div>
+          </section>
+          <section>
+            <h4>System</h4>
+            <div class="settings-row">
+              <span>Battery</span>
+              <span>84%</span>
+            </div>
+            <div class="settings-row">
+              <span>Updates</span>
+              <span class="hint">No pending updates</span>
+            </div>
+          </section>
         </div>
       </article>
     </template>
