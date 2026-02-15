@@ -403,6 +403,10 @@ const createWindow = (appName) => {
   actions.append(minimizeButton, maximizeButton, closeButton);
   header.append(title, actions);
 
+  actions.addEventListener("pointerdown", (event) => {
+    event.stopPropagation();
+  });
+
   const body = document.createElement("div");
   body.className = "window-body";
   const template = templates.content.querySelector(
@@ -507,9 +511,10 @@ const attachAppLaunchers = () => {
     button.addEventListener("click", () => {
       const app = button.dataset.app;
       if (app === "launcher") {
-        setLauncherVisibility(true);
+        setLauncherVisibility(launcher.hidden);
         return;
       }
+      setLauncherVisibility(false);
       launchApp(app);
     });
   });
@@ -517,7 +522,13 @@ const attachAppLaunchers = () => {
 
 launcherSearch.addEventListener("input", renderLauncher);
 launcherClose.addEventListener("click", () => setLauncherVisibility(false));
-activitiesButton.addEventListener("click", () => setLauncherVisibility(true));
+activitiesButton.addEventListener("click", () => setLauncherVisibility(launcher.hidden));
+
+launcher.addEventListener("click", (event) => {
+  if (event.target === launcher) {
+    setLauncherVisibility(false);
+  }
+});
 
 window.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && !launcher.hidden) {
